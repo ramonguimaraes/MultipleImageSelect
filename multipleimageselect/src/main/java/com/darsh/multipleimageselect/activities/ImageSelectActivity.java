@@ -56,8 +56,10 @@ public class ImageSelectActivity extends HelperActivity {
     private Handler handler;
     private Thread thread;
 
-    private final String[] projection = new String[]{ MediaStore.Images.Media._ID, MediaStore.Images.Media.DISPLAY_NAME, MediaStore.Images.Media.DATA };
-
+    private final String[] projection = new String[]{
+            MediaStore.Files.FileColumns._ID,
+            MediaStore.Files.FileColumns.TITLE,
+            MediaStore.Files.FileColumns.DATA};
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -344,8 +346,16 @@ public class ImageSelectActivity extends HelperActivity {
                 }
             }
 
-            Cursor cursor = getContentResolver().query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, projection,
-                    MediaStore.Images.Media.BUCKET_DISPLAY_NAME + " =?", new String[]{ album }, MediaStore.Images.Media.DATE_ADDED);
+
+            String selection =  MediaStore.Images.Media.DATA  + " like ? AND (" +
+                                MediaStore.Files.FileColumns.MEDIA_TYPE + "= ?  OR " +
+                                MediaStore.Files.FileColumns.MEDIA_TYPE + "= ?)";
+
+            String[] selectionArgs = new String[]{album + "%", String.valueOf(MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE) , String.valueOf(MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO)};
+
+
+            Cursor cursor = getContentResolver().query(MediaStore.Files.getContentUri("external"), projection,
+                    selection, selectionArgs, MediaStore.Images.Media.DATE_ADDED);
             if (cursor == null) {
                 sendMessage(Constants.ERROR);
                 return;
@@ -437,3 +447,4 @@ public class ImageSelectActivity extends HelperActivity {
         gridView.setVisibility(View.INVISIBLE);
     }
 }
+

@@ -7,6 +7,7 @@ import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Process;
@@ -17,6 +18,7 @@ import android.util.DisplayMetrics;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
+import android.webkit.MimeTypeMap;
 import android.widget.AdapterView;
 import android.widget.GridView;
 import android.widget.ProgressBar;
@@ -50,9 +52,10 @@ public class AlbumSelectActivity extends HelperActivity {
     private Thread thread;
 
     private final String[] projection = new String[]{
-            MediaStore.Images.Media.BUCKET_ID,
+            MediaStore.Files.FileColumns._ID,
             MediaStore.Images.Media.BUCKET_DISPLAY_NAME,
-            MediaStore.Images.Media.DATA };
+
+            MediaStore.Files.FileColumns.DATA};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,7 +90,8 @@ public class AlbumSelectActivity extends HelperActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Intent intent = new Intent(getApplicationContext(), ImageSelectActivity.class);
-                intent.putExtra(Constants.INTENT_EXTRA_ALBUM, albums.get(position).name);
+                String path = albums.get(position).cover.substring(0, albums.get(position).cover.indexOf(albums.get(position).name)) + albums.get(position).name;
+                intent.putExtra(Constants.INTENT_EXTRA_ALBUM, path);
                 startActivityForResult(intent, Constants.REQUEST_CODE);
             }
         });
@@ -146,6 +150,7 @@ public class AlbumSelectActivity extends HelperActivity {
             }
         };
         getContentResolver().registerContentObserver(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, false, observer);
+        getContentResolver().registerContentObserver(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, false, observer);
 
         checkPermission();
     }
@@ -243,50 +248,25 @@ public class AlbumSelectActivity extends HelperActivity {
                 sendMessage(Constants.FETCH_STARTED);
             }
 
+            String selection =  MediaStore.Files.FileColumns.MEDIA_TYPE + "= ?  OR " +
+                    MediaStore.Files.FileColumns.MEDIA_TYPE + "= ?";
+
+            String[] selectionArgs = new String[]{String.valueOf(MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE) , String.valueOf(MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO)};
+
             Cursor cursor = getApplicationContext().getContentResolver()
-                    .query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, projection,
-                            null, null, MediaStore.Images.Media.DATE_ADDED);
+                    .query(MediaStore.Files.getContentUri("external"), projection,
+                            selection, selectionArgs, MediaStore.Images.Media.DATE_ADDED);
             if (cursor == null) {
                 sendMessage(Constants.ERROR);
                 return;
             }
 
-            ArrayList<Album> temp = new ArrayList<>(cursor.getCount());
-            HashSet<Long> albumSet = new HashSet<>();
-            File file;
-            if (cursor.moveToLast()) {
-                do {
-                    if (Thread.interrupted()) {
-                        return;
-                    }
-
-                    long albumId = cursor.getLong(cursor.getColumnIndex(projection[0]));
-                    String album = cursor.getString(cursor.getColumnIndex(projection[1]));
-                    String image = cursor.getString(cursor.getColumnIndex(projection[2]));
-
-                    if (!albumSet.contains(albumId)) {
-                        /*
-                        It may happen that some image file paths are still present in cache,
-                        though image file does not exist. These last as long as media
-                        scanner is not run again. To avoid get such image file paths, check
-                        if image file exists.
-                         */
-                        file = new File(image);
-                        if (file.exists()) {
-                            temp.add(new Album(album, image));
-                            albumSet.add(albumId);
-                        }
-                    }
-
-                } while (cursor.moveToPrevious());
-            }
-            cursor.close();
-
             if (albums == null) {
                 albums = new ArrayList<>();
             }
             albums.clear();
-            albums.addAll(temp);
+            albums.addAll(loadFromCursor(cursor));
+            //albums.addAll(loadFromCursor(cursorVideo));
 
             sendMessage(Constants.FETCH_COMPLETED);
         }
@@ -296,6 +276,48 @@ public class AlbumSelectActivity extends HelperActivity {
         stopThread();
         thread = new Thread(runnable);
         thread.start();
+    }
+
+    private   ArrayList<Album>  loadFromCursor(Cursor cursor){
+        ArrayList<Album> temp = new ArrayList<>(cursor.getCount());
+        HashSet<String> albumSet = new HashSet<>();
+
+        //Nossa pasta onde carrega as imagens que serão enviada para servidor, caso pegue desta pasta da conflito interno (pois ele entende  que já ta adicionado e não adiciona de novo)
+        String pathLocalRecorder = Environment.getExternalStorageDirectory().getPath() + "/Recorder";
+        albumSet.add(pathLocalRecorder);
+
+        File file;
+        if (cursor.moveToLast()) {
+            do {
+                if (Thread.interrupted()) {
+                    return temp;
+                }
+
+                long albumId = cursor.getLong(cursor.getColumnIndex(projection[0]));
+                String album = cursor.getString(cursor.getColumnIndex(projection[1]));
+                String image = cursor.getString(cursor.getColumnIndex(projection[2]));
+
+
+                String path = image.substring(0, image.indexOf(album)) + album;
+                if (!albumSet.contains(path)) {
+                        /*
+                        It may happen that some image file paths are still present in cache,
+                        though image file does not exist. These last as long as media
+                        scanner is not run again. To avoid get such image file paths, check
+                        if image file exists.
+                         */
+                    file = new File(image);
+                    if (file.exists()) {
+                        temp.add(new Album(album, image));
+                        albumSet.add(path);
+                    }
+                }
+
+            } while (cursor.moveToPrevious());
+        }
+        cursor.close();
+
+        return temp;
     }
 
     private void stopThread() {
@@ -334,3 +356,4 @@ public class AlbumSelectActivity extends HelperActivity {
         gridView.setVisibility(View.INVISIBLE);
     }
 }
+

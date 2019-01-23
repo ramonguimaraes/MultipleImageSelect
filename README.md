@@ -1,3 +1,7 @@
+Biblioteca de Origem : https://github.com/darsh2/MultipleImageSelect
+
+Efetuado alteração para poder carregar vídeos e imagens no album.
+
 #MultipleImageSelect
 
 ![Alt text](/screenshots/mis.gif)

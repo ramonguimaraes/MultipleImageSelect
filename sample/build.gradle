@@ -8,8 +8,8 @@ android {
         applicationId "com.darsh.example.sample"
         minSdkVersion 11
         targetSdkVersion 24
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "1.1"
         multiDexEnabled true
     }
     buildTypes {
@@ -21,7 +21,7 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile 'com.android.support:appcompat-v7:24.2.1'
-    compile project(':multipleimageselect')
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'com.android.support:appcompat-v7:24.2.1'
+    implementation project(':multipleimageselect')
 }

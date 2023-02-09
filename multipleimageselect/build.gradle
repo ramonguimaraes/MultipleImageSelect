@@ -1,6 +1,6 @@
 apply plugin: 'com.android.library'
 apply plugin: 'maven-publish'
-group='com.github.egsys-dev'
+group='com.github.ramonapolinario-egsys'
 
 android {
     compileSdkVersion 28

@@ -1,6 +1,5 @@
 apply plugin: 'com.android.library'
 apply plugin: 'maven-publish'
-group = 'com.github.ramonapolinario-egsys'
 
 android {
     compileSdkVersion 28
@@ -30,7 +29,7 @@ afterEvaluate {
     android.libraryVariants.each { variant ->
         publishing.publications.create(variant.name, MavenPublication) {
             from components.findByName(variant.name)
-            groupId = 'com.github.ramonapolinario-egsys'
+            groupId = 'com.darsh.multipleimageselect'
             artifactId = 'MultipleImageSelect'
             version = '2.0.2'
         }

@@ -7,8 +7,8 @@ android {
     defaultConfig {
         minSdkVersion 21
         targetSdkVersion 22
-        versionCode 6
-        versionName "2.0.4"
+        versionCode 7
+        versionName "2.0.5"
     }
     buildTypes {
         release {
@@ -23,4 +23,15 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.0.0'
     implementation 'com.google.android.material:material:1.0.0'
     implementation 'com.github.bumptech.glide:glide:4.11.0'
+}
+
+afterEvaluate {
+    android.libraryVariants.each { variant ->
+        publishing.publications.create(variant.name, MavenPublication) {
+            from components.findByName(variant.name)
+            groupId = 'com.darsh.multipleimageselect'
+            artifactId = 'MultipleImageSelect'
+            version = '2.0.5'
+        }
+    }
 }
